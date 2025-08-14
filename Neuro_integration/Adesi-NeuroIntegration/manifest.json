@@ -1,0 +1,40 @@
+{
+	"name": "NeuroIntegration",
+	"namespace": "Adesi",
+	"version_number": "0.0.1",
+	"description": "This mod add the Neuro-SDK to Brotato allowing Neuro-sama to take control over the whole game and play it on her own\nor with a real player\n\nSettings allow for customization of what Neuro can and cannot control of the game. allowing for cooperative play even.",
+	"website_url": "https://github.com/Adesii/Neuro-sdk-Brotato-Integration",
+	"dependencies": [
+
+	],
+	"extra": {
+		"godot": {
+			"authors": [
+				"Adesi"
+			],
+			"optional_dependencies": [
+
+			],
+			"compatible_game_version": [
+
+			],
+			"compatible_mod_loader_version": [
+				"6.1.0"
+			],
+			"incompatibilities": [
+
+			],
+			"load_before": [
+
+			],
+			"tags": [
+
+			],
+			"config_schema": {
+
+			},
+			"description_rich": "",
+			"image": null
+		}
+	}
+}

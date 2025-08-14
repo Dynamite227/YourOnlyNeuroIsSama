@@ -1,0 +1,15 @@
+{
+  "author": "",
+  "client_side": false,
+  "description": "",
+  "friendly_name": "your only neuro is sama",
+  "id": "12345",
+  "link": "",
+  "name": "Neuro_integration",
+  "overwrites": false,
+  "priority": 0,
+  "requires": [
+    ""
+  ],
+  "version": ""
+}

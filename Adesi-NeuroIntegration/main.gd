@@ -5,6 +5,12 @@ class_name IntegrationMain
 # As i don't want to deal with multiple load() scattered over multiple files. 
 # Some dedicated files should be fine. but stuff that interacts with the sdk should be in here. But stuff like a wrapper or something can be written seperatly and included here
 
+
+const HORIZONTAL_SLIDER = "HorizSlider"
+const CHECK_BUTTON = "ActionUIDataCheckButton"
+const EIGHT_WAY = "8Way"
+const XY_PLOT = "XYPlot"
+var moveDataTypesArray = [HORIZONTAL_SLIDER, CHECK_BUTTON, EIGHT_WAY, XY_PLOT]
 var movesButtons
 var mod_main
 var gameMain
@@ -14,14 +20,15 @@ var player
 var matchData
 var opChar
 var choosing = false
+var allMovesPath
 func _init(parent):
 	self.mod_main = parent
-	
 	
 
 func _ready():
 	yield (get_tree().create_timer(1), "timeout")
 	print("IntegrationMain ready")
+	yield(get_tree().create_timer(6), "timeout")
 	var menu_start_button = get_tree().current_scene.get_node("UILayer/MainMenu/ButtonContainer/SingleplayerButton")
 	menu_start_button.emit_signal("pressed")
 	yield (get_tree().create_timer(1), "timeout")
@@ -49,6 +56,7 @@ func _process(delta):
 
 
 func play_turn():
+	
 	choosing = true
 	if game.p1_data:
 		yield (get_tree().create_timer(1), "timeout")
@@ -96,20 +104,51 @@ func pick_move():
 	pick.register()
 	if pick_action != null:
 
-		pick.connect("action_chosen", self, "_on_action_chosen")
+		pick_action.connect("action_chosen", self, "_on_action_chosen")
 
 	
-	while choosing:
-		yield (get_tree().create_timer(5), "timeout")
-		if not choosing:
-			break
-		choosing = false
 
 
+func get_state_data_node(state):
+	var dataNode
+	if state.data_node != null:
+		dataNode = state.data_node
+	return dataNode
+
+
+func _on_action_chosen(state):
+	var allMoves = get_tree().root.get_node("Main/UILayer/GameUI/BottomBar/ActionButtons/VBoxContainer/P1ActionButtons")
 	
-func _on_action_chosen():
-	choosing = false
-
+	var dataWindow = ActionWindow.new(get_parent())
+	var foundConsts = []
+	var children = get_state_data_node(state).get_children() if get_state_data_node(state) != null else []
+	print(children)
+	for child in children:
+		var scriptPath = child.get_script().resource_path if child.get_script() != null else ""
+		print(child.get_script().resource_path)
+		for constCheck in moveDataTypesArray:
+			if constCheck in scriptPath:
+				print(constCheck, "found in", scriptPath)
+				foundConsts.append(constCheck)
+		for found in foundConsts:
+			var chooseAction = ChangeMoveData.new(dataWindow, child, found)
+			dataWindow.add_action(chooseAction)
+			dataWindow.set_force(1, "change", found, false)
+			
+			match found:
+				HORIZONTAL_SLIDER:
+					print("found horizontal slider")
+				XY_PLOT:
+					print("found xy plot")
+				EIGHT_WAY:
+					print("8way found")
+				CHECK_BUTTON:
+					print("check button found")	
+	dataWindow.register()	
+	yield (get_tree().create_timer(20), "timeout")
+	allMoves.get_node("%SelectButton").emit_signal("pressed")
+	choosing = false		
+			
 func _choose_character():
 	
 	print("shown selections")

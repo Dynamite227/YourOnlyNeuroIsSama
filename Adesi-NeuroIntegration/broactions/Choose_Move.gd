@@ -2,7 +2,7 @@ class_name ChooseMove
 extends "res://Neuro_integration/Adesi-NeuroIntegration/neuro-sdk/actions/neuro_action.gd"
 
 
-signal action_chosen
+signal action_chosen(state)
 var selection_basis # thing should inherit BaseSelection
 var what_is_being_selected
 
@@ -43,8 +43,10 @@ func _validate_action(data, state):
 func _execute_action(state):
 	print("boop")
 	state["move"].set_pressed(true)
-	selection_basis.get_node("%SelectButton").emit_signal("pressed")
-	emit_signal("action_chosen")
+	
+
+	
+	emit_signal("action_chosen", state["move"])
 
 
 	

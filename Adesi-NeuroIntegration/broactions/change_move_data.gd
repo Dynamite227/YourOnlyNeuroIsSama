@@ -10,7 +10,7 @@ const XY_PLOT = "XYPlot"
 var limitPerDataType = {
 	HORIZONTAL_SLIDER: Vector2(1, 100),
 	CHECK_BUTTON: Vector2(0, 1),
-	EIGHT_WAY: [1,2,3,4,5,6,7,8],
+	EIGHT_WAY: ["NW", "N", "NE", "W", "Neutral", "E", "SW", "S", "SE"],
 	XY_PLOT: Vector2(-1, 1)
 }
 
@@ -68,9 +68,9 @@ func _get_schema():
 		EIGHT_WAY:
 			var valid_values = limitPerDataType[EIGHT_WAY]
 			schema_properties["new_value"] = {
-				"type": "integer",
+				"type": "string",
 				"enum": valid_values,
-				"description": "The direction value (1-8 representing the 8 directions)"
+				"description": "The direction value (NW, N, NE, W, Neutral, E, SW, S, SE)"
 			}
 		_:
 			schema_properties["new_value"] = {
@@ -84,12 +84,20 @@ func _get_schema():
 
 func _validate_action(data, state):
 	var selected_parameter = data.get_string("parameter", "")
-	var new_value = data.get_float("new_value", 0.0)
 	
-	print("Validating parameter: " + str(selected_parameter) + ", new_value: " + str(new_value))
+	print("Validating parameter: " + str(selected_parameter))
 	
 	if not selected_parameter or selected_parameter == "":
 		return ExecutionResult.failure(Strings.action_failed_missing_required_parameter(["parameter"]))
+	
+	# Handle different value types based on data type
+	var new_value
+	if what_is_being_selected == EIGHT_WAY:
+		new_value = data.get_string("new_value", "")
+		print("new_value (string): " + str(new_value))
+	else:
+		new_value = data.get_float("new_value", 0.0)
+		print("new_value (float): " + str(new_value))
 	
 	# Validate value based on data type limits
 	var validation_result = validate_value_for_data_type(new_value)
@@ -105,7 +113,7 @@ func _validate_action(data, state):
 	state["new_value"] = new_value
 	return ExecutionResult.success()
 
-func validate_value_for_data_type(value: float) -> Dictionary:
+func validate_value_for_data_type(value) -> Dictionary:
 	match what_is_being_selected:
 		CHECK_BUTTON:
 			var limits = limitPerDataType[CHECK_BUTTON]
@@ -124,13 +132,15 @@ func validate_value_for_data_type(value: float) -> Dictionary:
 		
 		EIGHT_WAY:
 			var valid_values = limitPerDataType[EIGHT_WAY]
-			var int_value = int(value)
-			if not valid_values.has(int_value):
-				return {"success": false, "error_message": "new_value must be one of " + str(valid_values) + " for EIGHT_WAY, got: " + str(int_value)}
+			if not valid_values.has(value):
+				return {"success": false, "error_message": "new_value must be one of " + str(valid_values) + " for EIGHT_WAY, got: " + str(value)}
 		
 		_:
-			if value < -1.0 or value > 1.0:
-				return {"success": false, "error_message": "new_value must be between -1 and 1, got: " + str(value)}
+			if typeof(value) == TYPE_REAL or typeof(value) == TYPE_INT:
+				if value < -1.0 or value > 1.0:
+					return {"success": false, "error_message": "new_value must be between -1 and 1, got: " + str(value)}
+			else:
+				return {"success": false, "error_message": "new_value must be a number, got: " + str(value)}
 	
 	return {"success": true, "error_message": ""}
 
@@ -151,59 +161,23 @@ func _execute_action(state):
 		return ExecutionResult.failure("Failed to change " + str(selected_parameter))
 
 
-func change_move_data_value(parameter_name: String, new_value: float) -> bool:
+func change_move_data_value(parameter_name: String, new_value) -> bool:
 	print("Attempting to change parameter: " + parameter_name + " to value: " + str(new_value))
 	print("Data type being changed: " + what_is_being_selected)
-	
-	# Clamp value based on data type limits
-	var clamped_value = clamp_value_for_data_type(new_value)
-	print("Clamped value: " + str(clamped_value))
 	
 	# Handle different data types based on what_is_being_selected
 	match what_is_being_selected:
 		XY_PLOT:
-			return handle_xy_plot_change(parameter_name, clamped_value)
+			return handle_xy_plot_change(parameter_name, new_value)
 		HORIZONTAL_SLIDER:
-			return handle_horizontal_slider_change(parameter_name, clamped_value)
+			return handle_horizontal_slider_change(parameter_name, new_value)
 		CHECK_BUTTON:
-			return handle_check_button_change(parameter_name, clamped_value)
+			return handle_check_button_change(parameter_name, new_value)
 		EIGHT_WAY:
-			return handle_eight_way_change(parameter_name, clamped_value)
+			return handle_eight_way_change(parameter_name, new_value)
 		_:
 			print("Unknown data type: " + what_is_being_selected)
-			return handle_generic_change(parameter_name, clamped_value)
-
-func clamp_value_for_data_type(value: float) -> float:
-	match what_is_being_selected:
-		CHECK_BUTTON:
-			var limits = limitPerDataType[CHECK_BUTTON]
-			return clamp(value, limits.x, limits.y)
-		
-		XY_PLOT:
-			var limits = limitPerDataType[XY_PLOT]
-			return clamp(value, limits.x, limits.y)
-		
-		HORIZONTAL_SLIDER:
-			var limits = limitPerDataType[HORIZONTAL_SLIDER]
-			return clamp(value, limits.x, limits.y)
-		
-		EIGHT_WAY:
-			# For EIGHT_WAY, find the closest valid value
-			var valid_values = limitPerDataType[EIGHT_WAY]
-			var int_value = int(round(value))
-			var closest_value = valid_values[0]
-			var min_distance = abs(int_value - closest_value)
-			
-			for valid_val in valid_values:
-				var distance = abs(int_value - valid_val)
-				if distance < min_distance:
-					min_distance = distance
-					closest_value = valid_val
-			
-			return float(closest_value)
-		
-		_:
-			return clamp(value, -1.0, 1.0)
+			return handle_generic_change(parameter_name, new_value)
 
 func handle_xy_plot_change(parameter_name: String, new_value: float) -> bool:
 	print("Handling XYPlot change for parameter: " + parameter_name)
@@ -214,24 +188,22 @@ func handle_xy_plot_change(parameter_name: String, new_value: float) -> bool:
 		
 		var new_vector = current_vector
 		if parameter_name == "x":
-			new_vector.x = new_value + 100
+			new_vector.x = new_value 
 		elif parameter_name == "y":
-			new_vector.y = new_value + 100
+			new_vector.y = new_value 
 		else:
 			print("Invalid parameter for XYPlot: " + parameter_name)
 			return false
 		
-		# Ensure vector stays within unit circle
-		if new_vector.length() > 1.0:
-			new_vector = new_vector.normalized()
+		
 		
 		print("Setting new vector value: " + str(new_vector))
 		selection_basis.set_value_float(new_vector)
+		selection_basis.update_value(new_vector)
 		
 		# Trigger data changed signal if available
-		if selection_basis.has_signal("data_changed"):
-			selection_basis.emit_signal("data_changed")
-		
+		selection_basis.emit_signal("data_changed")
+		selection_basis.emit_signal("pos_data_changed", new_vector)
 		return true
 	
 	return false
@@ -239,18 +211,22 @@ func handle_xy_plot_change(parameter_name: String, new_value: float) -> bool:
 func handle_horizontal_slider_change(parameter_name: String, new_value: float) -> bool:
 	print("Handling HorizontalSlider change for parameter: " + parameter_name)
 	
-	if selection_basis.has_method("set_value"):
+	
 
-		selection_basis.get_node("%Direction").value = new_value
+	var direction_node = selection_basis.get_node("Direction")
+	direction_node.value = new_value
+	print(direction_node.value)
 
 		# Trigger data changed signal if available
-		if selection_basis.has_signal("data_changed"):
-			selection_basis.emit_signal("data_changed")
+
+	selection_basis.emit_signal("data_changed")
 		
-		print("Set slider value to: " + str(new_value))
-		return true
+	print("Set slider value to: " + str(new_value))
+	selection_basis.on_value_changed(new_value)
+	selection_basis.buffer_value_changed = true
+	return true
 	
-	return false
+	
 
 func handle_check_button_change(parameter_name: String, new_value: float) -> bool:
 	print("Handling CheckButton change for parameter: " + parameter_name)
@@ -270,43 +246,34 @@ func handle_check_button_change(parameter_name: String, new_value: float) -> boo
 	
 	return false
 
-func handle_eight_way_change(parameter_name: String, new_value: float) -> bool:
+func handle_eight_way_change(parameter_name: String, new_value) -> bool:
 	print("Handling 8Way change for parameter: " + parameter_name)
+	var direction_vectors = {
+	"SE": Vector2(1, 1).normalized(),    # data.x > 0 and data.y > 0
+	"NE": Vector2(1, -1).normalized(),   # data.x > 0 and data.y < 0  
+	"E": Vector2(1, 0),                  # data.x > 0 and data.y == 0
+	"SW": Vector2(-1, 1).normalized(),   # data.x < 0 and data.y > 0
+	"NW": Vector2(-1, -1).normalized(),  # data.x < 0 and data.y < 0
+	"W": Vector2(-1, 0),                 # data.x < 0 and data.y == 0
+	"S": Vector2(0, 1),                  # data.x == 0 and data.y > 0
+	"N": Vector2(0, -1),                 # data.x == 0 and data.y < 0
+	"Neutral": Vector2(0, 0)             # data.x == 0 and data.y == 0
+}
+	var new_vector = direction_vectors.get(new_value, Vector2(0, 0))
+	# For 8Way controls, convert direction string to vector
+	var direction_string = str(new_value)
+	print("8Way direction string: " + direction_string)
 	
-	# For 8Way controls, convert discrete direction to vector
-	var direction_value = int(new_value)
-	print("8Way direction value: " + str(direction_value))
+
+	selection_basis.set_facing(new_vector.x)
+
 	
-	if selection_basis.has_method("set_value_float") and selection_basis.has_method("get_value_float"):
-		var new_vector = Vector2.ZERO
-		
-		# Convert direction number (1-8) to vector
-		match direction_value:
-			1: # Up
-				new_vector = Vector2(0, -1)
-			2: # Up-Right
-				new_vector = Vector2(1, -1).normalized()
-			3: # Right
-				new_vector = Vector2(1, 0)
-			4: # Down-Right
-				new_vector = Vector2(1, 1).normalized()
-			5: # Down
-				new_vector = Vector2(0, 1)
-			6: # Down-Left
-				new_vector = Vector2(-1, 1).normalized()
-			7: # Left
-				new_vector = Vector2(-1, 0)
-			8: # Up-Left
-				new_vector = Vector2(-1, -1).normalized()
-			_: # Invalid or 0 - neutral
-				new_vector = Vector2.ZERO
-		
-		print("Setting new 8Way vector value: " + str(new_vector))
-		selection_basis.set_value_float(new_vector)
+	print("Setting new 8Way vector value: " + str(direction_string))
+
 		
 		# Trigger data changed signal if available
-		if selection_basis.has_signal("data_changed"):
-			selection_basis.emit_signal("data_changed")
+	if selection_basis.has_signal("data_changed"):
+		selection_basis.emit_signal("data_changed")
 		
 		return true
 	

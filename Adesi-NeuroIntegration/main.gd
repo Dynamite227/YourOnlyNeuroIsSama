@@ -121,31 +121,51 @@ func _on_action_chosen(state):
 	
 	var dataWindow = ActionWindow.new(get_parent())
 	var foundConsts = []
+	var actions_added = false
 	var children = get_state_data_node(state).get_children() if get_state_data_node(state) != null else []
-	print(children)
+	print("Found children: ", children.size())
+	
 	for child in children:
 		var scriptPath = child.get_script().resource_path if child.get_script() != null else ""
-		print(child.get_script().resource_path)
+		print("Checking script path: ", scriptPath)
+		
 		for constCheck in moveDataTypesArray:
 			if constCheck in scriptPath:
 				print(constCheck, "found in", scriptPath)
 				foundConsts.append(constCheck)
+		
 		for found in foundConsts:
 			var chooseAction = ChangeMoveData.new(dataWindow, child, found)
 			dataWindow.add_action(chooseAction)
-			dataWindow.set_force(1, "change", found, false)
+			actions_added = true
+			print("Added action for: ", found)
 			
 			match found:
 				HORIZONTAL_SLIDER:
 					print("found horizontal slider")
+					dataWindow.set_context("Change the value of the slider, the slider is used for things like move speed, or other values that are not binary, so please pick a value that makes sense for the move you are using, you are using " + str(state), false)
 				XY_PLOT:
 					print("found xy plot")
+					dataWindow.set_context("Change the value of the XY plot, the XY plot is used for things like move speed in 2d space, or other values that are not binary, so please pick a value that makes sense for the move you are using, you are using " + str(state), false)
 				EIGHT_WAY:
 					print("8way found")
+					dataWindow.set_context("Change the value of the 8-way direction, the 8-way direction is used for things like movement direction in a 2D space, so please pick a direction that makes sense for the move you are using, please note that not all values will be usable, you are using " + str(state), false)
 				CHECK_BUTTON:
-					print("check button found")	
-	dataWindow.register()	
-	yield (get_tree().create_timer(20), "timeout")
+					print("check button found")
+					dataWindow.set_context("Change the value of the check button, the check button is used for things like toggling options on and off, so please pick a value that makes sense for the move you are using, you are using " + str(state), false)
+		
+		# Clear foundConsts for next child
+		foundConsts.clear()
+	
+	# Only register and proceed if actions were added
+	if actions_added:
+		dataWindow.set_force(1, "change", "move data", false)
+		dataWindow.register()
+		print("ActionWindow registered with actions")
+		yield(get_tree().create_timer(20), "timeout")
+	else:
+		print("No actions found to add to ActionWindow - skipping registration")
+	
 	allMoves.get_node("%SelectButton").emit_signal("pressed")
 	choosing = false		
 			
@@ -158,7 +178,7 @@ func _choose_character():
 
 	pick.set_force(3, "Pick a character", "Pick a character", false)
 
-	pick.set_context("Pick a character to play with", false)
+	pick.set_context("Pick a character to play with, pick whoever you want dont just go with one specific character, be different", false)
 	print("picking")
 
 	pick.register()

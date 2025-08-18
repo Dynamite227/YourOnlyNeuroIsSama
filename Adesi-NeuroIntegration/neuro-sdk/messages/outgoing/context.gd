@@ -18,9 +18,9 @@ func _get_data() -> Dictionary:
 	}
 
 static func send(message: String, silent: bool = false):
-    var websocket_node = ModLoader.get_tree().root.get_node_or_null("/root/ModLoader/@@2/WebsocketNode")
-    if websocket_node != null:
-        var ws_message = load("res://Neuro_integration/Adesi-NeuroIntegration/neuro-sdk/messages/outgoing/context.gd").new(message, silent)
-        websocket_node.send(ws_message)
-    else:
-        print("WebSocket node not found at /root/ModLoader/Adesi-NeuroIntegration/WebsocketNode")
+	var websocket_node = ModLoader.get_tree().root.get_node_or_null("/root/ModLoader/@@2/WebsocketNode")
+	if websocket_node != null:
+		var ws_message = load("res://Neuro_integration/Adesi-NeuroIntegration/neuro-sdk/messages/outgoing/context.gd").new(message, silent)
+		websocket_node.send(ws_message)
+	else:
+		print("WebSocket node not found at /root/ModLoader/Adesi-NeuroIntegration/WebsocketNode")

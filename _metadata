@@ -1,6 +1,6 @@
 {
   "author": "",
-  "client_side": false,
+  "client_side": true,
   "description": "",
   "friendly_name": "your only neuro is sama",
   "id": "12345",
